@@ -50,10 +50,6 @@ CONFIG = {
     "fetch_limit":    10,
     "lookback_days":  3,
 
-    # Claude API key — optional, only used for brand name extraction in the
-    # unsubscribe agent. Leave blank to use domain-based heuristic instead.
-    "claude_api_key": os.getenv("ANTHROPIC_API_KEY", ""),
-
     # Set True to actually open unsubscribe links.
     # Leave False for a dry run while you're testing.
     "live_unsub": os.getenv("LIVE_UNSUB", "false").lower() == "true",
@@ -193,7 +189,6 @@ def run_unsub_agent():
     print("═" * 55)
 
     memory   = BrandMemory(CONFIG["data_dir"] / "brand_decisions.json")
-    api_key  = CONFIG.get("claude_api_key", "")
     live     = CONFIG.get("live_unsub", False)
 
     M       = connect(CONFIG)
