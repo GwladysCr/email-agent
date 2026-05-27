@@ -1,0 +1,11 @@
+# Email Agent — Python dependencies
+# Install in a-Shell on iPhone: pip install -r requirements.txt
+
+scikit-learn>=1.4.0
+numpy>=1.26.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Optional — only for brand name extraction in unsub agent.
+# Skip it and the agent uses domain heuristics instead.
+anthropic>=0.25.0

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Email Agent</title>
+<style>
+:root {
+  --bg:     #0f0f12; --bg2: #18181e; --bg3: #21212a;
+  --border: rgba(255,255,255,0.07);
+  --text:   #e4e2f0; --muted: #6e6c82;
+  --z1: #f87171; --z2: #fbbf24; --z3: #4ade80;
+  --purple: #a78bfa; --teal: #2dd4bf; --blue: #60a5fa;
+  --r: 12px;
+  --safe-t: env(safe-area-inset-top,0px);
+  --safe-b: env(safe-area-inset-bottom,0px);
+  font-family: -apple-system,"SF Pro Text",sans-serif;
+  font-size: 15px; color: var(--text);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);min-height:100dvh;padding-bottom:calc(var(--safe-b) + 76px)}
+
+/* header */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(15,15,18,.88);
+  backdrop-filter:blur(18px) saturate(1.5);
+  -webkit-backdrop-filter:blur(18px) saturate(1.5);
+  border-bottom:1px solid var(--border);
+  padding:calc(var(--safe-t) + 10px) 18px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+header h1 span{color:var(--purple)}
+.live-badge{
+  font-size:11px;font-weight:600;letter-spacing:.5px;
+  padding:3px 9px;border-radius:20px;
+  background:rgba(74,222,128,.12);color:var(--z3);
+  display:flex;align-items:center;gap:5px;
+}
+.live-badge::before{content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--z3);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* sections & tabs */
+.section{display:none;padding:14px 14px 0}
+.section.active{display:block}
+.tabs{display:flex;gap:6px;padding:12px 14px 0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;padding:6px 15px;border-radius:20px;
+  font-size:13px;font-weight:600;border:1.5px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;
+  font-family:inherit;transition:all .18s;
+}
+.tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+
+/* cards */
+.card{background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.card-head{padding:12px 15px;font-weight:600;font-size:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:13px 15px}
+
+/* zone banner */
+.zone-banner{
+  border-radius:var(--r);padding:14px 15px;margin-bottom:12px;
+  border:1px solid var(--border);
+}
+.zone-label{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px}
+.zone-desc{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* progress bar */
+.prog-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:10px 0 4px}
+.prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.prog-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+
+/* stat grid */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 8px;text-align:center}
+.stat-n{font-size:24px;font-weight:700;line-height:1}
+.stat-l{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+
+/* per-category bars */
+.cat-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.cat-row:last-child{border-bottom:none}
+.cat-icon{width:26px;text-align:center;font-size:16px;flex-shrink:0}
+.cat-name{width:68px;font-size:13px;font-weight:500;flex-shrink:0}
+.cat-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.cat-bar{height:100%;border-radius:3px;transition:width .4s}
+.cat-count{width:28px;text-align:right;font-size:12px;color:var(--muted);flex-shrink:0}
+.cat-samples{width:32px;text-align:right;font-size:11px;flex-shrink:0}
+
+/* log */
+.log-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.log-subj{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.badge{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.3px}
+
+/* brands */
+.brand-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.brand-row:last-child{border-bottom:none}
+.brand-action{padding:3px 9px;border-radius:7px;font-size:11px;font-weight:700}
+.a-unsub{background:rgba(248,113,113,.14);color:#f87171}
+.a-keep {background:rgba(74,222,128,.12);color:#4ade80}
+.a-recls{background:rgba(96,165,250,.12);color:#60a5fa}
+.forget-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 3px;font-family:inherit;line-height:1}
+
+/* run section */
+.run-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.run-btn{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 10px;text-align:center;cursor:pointer;font-family:inherit;transition:transform .14s}
+.run-btn:active{transform:scale(.95)}
+.run-btn.primary{border-color:var(--purple);background:rgba(167,139,250,.1)}
+.run-icon{font-size:26px;margin-bottom:6px}
+.run-title{font-size:13px;font-weight:600;color:var(--text)}
+.run-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* config form */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{width:100%;padding:11px 13px;border-radius:9px;background:var(--bg3);border:1.5px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;-webkit-appearance:none}
+.field input:focus,.field select:focus{border-color:var(--purple)}
+.save-btn{width:100%;padding:14px;border-radius:var(--r);background:var(--purple);color:#fff;font-size:15px;font-weight:700;border:none;font-family:inherit;cursor:pointer}
+
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(15,15,18,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--border);padding:8px 0 calc(8px + var(--safe-b));display:flex;justify-content:space-around;z-index:50}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--muted);cursor:pointer;padding:4px 14px;border-radius:10px;background:none;border:none;font-family:inherit;font-weight:500;letter-spacing:.2px;transition:color .15s}
+.nav-btn .ni{font-size:21px}
+.nav-btn.active{color:var(--purple)}
+
+/* toast */
+#toast{position:fixed;top:calc(var(--safe-t) + 62px);left:50%;transform:translateX(-50%) translateY(-6px);background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header>
+  <h1>Email <span>Agent</span></h1>
+  <div class="live-badge">Active</div>
+</header>
+
+<!-- ── DASHBOARD ── -->
+<div class="section active" id="s-dash">
+
+  <div class="zone-banner" id="zone-banner">
+    <div class="zone-label" id="zone-label">Zone 1 — Learning</div>
+    <div class="zone-desc" id="zone-desc">Collecting labelled examples. The model asks you to classify every email.</div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-labels">
+      <span>0 labels</span>
+      <span id="prog-mid">Zone 2 at ~30</span>
+      <span id="prog-end">Zone 3 at ~80</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="st-auto" style="color:var(--z3)">0</div><div class="stat-l">Auto</div></div>
+    <div class="stat"><div class="stat-n" id="st-asked" style="color:var(--z2)">0</div><div class="stat-l">Asked</div></div>
+    <div class="stat"><div class="stat-n" id="st-acc" style="color:var(--purple)">—</div><div class="stat-l">Accuracy</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      Folder counts
+      <span id="last-run" style="font-size:12px;color:var(--muted)">never run</span>
+    </div>
+    <div class="card-body" id="folder-rows"></div>
+  </div>
+
+</div>
+
+<!-- ── LOG ── -->
+<div class="section" id="s-log">
+  <div class="card">
+    <div class="card-head">
+      Classification log
+      <button onclick="clearLog()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit">Clear</button>
+    </div>
+    <div class="card-body" id="log-list">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:18px 0">No activity yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BRANDS ── -->
+<div class="section" id="s-brands">
+  <div class="card">
+    <div class="card-head">
+      Brand decisions
+      <span id="brand-count" style="font-size:12px;color:var(--muted)">0 stored</span>
+    </div>
+    <div class="card-body" id="brand-list">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:18px 0">No decisions yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RUN ── -->
+<div class="section" id="s-run">
+  <div class="run-grid">
+    <button class="run-btn primary" onclick="simClassify()">
+      <div class="run-icon">🗂️</div>
+      <div class="run-title">Classify inbox</div>
+      <div class="run-sub">Run now</div>
+    </button>
+    <button class="run-btn" onclick="simUnsub()">
+      <div class="run-icon">🚫</div>
+      <div class="run-title">Unsubscribe</div>
+      <div class="run-sub">Review ads</div>
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Configuration</div>
+    <div class="card-body">
+      <div class="field"><label>IMAP Host</label><input id="c-host" type="text" placeholder="imap.yourprovider.com"></div>
+      <div class="field"><label>IMAP Port</label><input id="c-port" type="number" value="993"></div>
+      <div class="field"><label>Email address</label><input id="c-user" type="email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password / App password</label><input id="c-pass" type="password" placeholder="••••••••"></div>
+      <div class="field"><label>Claude API key (optional — brand detection only)</label><input id="c-key" type="password" placeholder="sk-ant-… or leave blank"></div>
+      <div class="field"><label>Lookback period</label>
+        <select id="c-days"><option value="1">1 day</option><option value="3" selected>3 days</option><option value="7">7 days</option></select>
+      </div>
+      <div class="field"><label>Live unsubscribe</label>
+        <select id="c-live"><option value="false" selected>Dry run (safe — just log)</option><option value="true">Yes — actually open links</option></select>
+      </div>
+      <button class="save-btn" onclick="saveConfig()">Save — copy .env to clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NAV ── -->
+<nav>
+  <button class="nav-btn active" onclick="showTab('s-dash',this)"><span class="ni">📊</span>Dashboard</button>
+  <button class="nav-btn" onclick="showTab('s-log',this)"><span class="ni">📋</span>Log</button>
+  <button class="nav-btn" onclick="showTab('s-brands',this)"><span class="ni">🏷️</span>Brands</button>
+  <button class="nav-btn" onclick="showTab('s-run',this)"><span class="ni">▶️</span>Run</button>
+</nav>
+
+<script>
+// ── storage ───────────────────────────────────────────────────────────────────
+const LS = { get: k=>{ try{return JSON.parse(localStorage.getItem(k))}catch{return null} }, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
+
+let S = LS.get('ema_state') || {
+  labelled: 0, auto: 0, asked: 0, corrections: 0, accuracy: null,
+  folders: {travel:0,bills:0,jobs:0,personal:0,ads:0},
+  distribution: {travel:0,bills:0,jobs:0,personal:0,ads:0},
+  log: [], brands: {}, lastRun: null,
+};
+const save = () => LS.set('ema_state', S);
+
+// ── nav ───────────────────────────────────────────────────────────────────────
+function showTab(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── toast ─────────────────────────────────────────────────────────────────────
+function toast(m,d=2200){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),d);
+}
+
+// ── zone logic ────────────────────────────────────────────────────────────────
+function currentZone(labelled){
+  if(labelled < 30) return 1;
+  if(labelled < 80) return 2;
+  return 3;
+}
+
+// ── render ────────────────────────────────────────────────────────────────────
+const CAT = {
+  travel:  {icon:'✈️', color:'#2dd4bf'},
+  bills:   {icon:'⚡', color:'#60a5fa'},
+  jobs:    {icon:'💼', color:'#4ade80'},
+  personal:{icon:'👤', color:'#a78bfa'},
+  ads:     {icon:'📢', color:'#fbbf24'},
+};
+const ZONE_CFG = {
+  1: { label:'Zone 1 — Learning',    desc:'Collecting examples. Every email is labelled by you.',        color:'#f87171', bg:'rgba(248,113,113,.08)' },
+  2: { label:'Zone 2 — Hybrid',      desc:'Model is training. Asks only when confidence is below 80%.',  color:'#fbbf24', bg:'rgba(251,191,36,.08)'  },
+  3: { label:'Zone 3 — Autonomous',  desc:'Confidence above 80%. Classifying silently — just review.',   color:'#4ade80', bg:'rgba(74,222,128,.08)'  },
+};
+
+function render(){
+  const z = currentZone(S.labelled);
+  const zc = ZONE_CFG[z];
+
+  // zone banner
+  const banner = document.getElementById('zone-banner');
+  banner.style.borderColor = zc.color + '44';
+  banner.style.background  = zc.bg;
+  document.getElementById('zone-label').textContent = zc.label;
+  document.getElementById('zone-label').style.color = zc.color;
+  document.getElementById('zone-desc').textContent  = zc.desc;
+
+  const pct = Math.min(100, (S.labelled / 80) * 100);
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = z===1? '#f87171' : z===2? '#fbbf24' : '#4ade80';
+
+  // stats
+  document.getElementById('st-auto').textContent  = S.auto;
+  document.getElementById('st-asked').textContent = S.asked;
+  document.getElementById('st-acc').textContent   = S.accuracy ? (S.accuracy*100).toFixed(0)+'%' : '—';
+
+  // last run
+  document.getElementById('last-run').textContent = S.lastRun
+    ? new Date(S.lastRun).toLocaleString('fr-FR',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})
+    : 'never run';
+
+  // folder rows
+  const total = Object.values(S.folders).reduce((a,b)=>a+b,0)||1;
+  document.getElementById('folder-rows').innerHTML = Object.entries(CAT).map(([k,v])=>{
+    const n = S.folders[k]||0;
+    const lbl = S.distribution[k]||0;
+    const pct = Math.min(100, n/total*400);
+    return `<div class="cat-row">
+      <div class="cat-icon">${v.icon}</div>
+      <div class="cat-name">${k.charAt(0).toUpperCase()+k.slice(1)}</div>
+      <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${v.color}"></div></div>
+      <div class="cat-count">${n}</div>
+      <div class="cat-samples" style="color:${v.color}">${lbl ? lbl+'✓' : ''}</div>
+    </div>`;
+  }).join('');
+
+  // log
+  const ll = document.getElementById('log-list');
+  if(!S.log.length){ ll.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:18px 0">No activity yet.</div>'; }
+  else {
+    ll.innerHTML = [...S.log].reverse().slice(0,50).map(e=>{
+      const cv = CAT[e.cat]||{icon:'?',color:'#888'};
+      const modeTag = e.mode==='auto'
+        ? `<span class="badge" style="background:rgba(74,222,128,.14);color:#4ade80">auto</span>`
+        : `<span class="badge" style="background:rgba(251,191,36,.14);color:#fbbf24">asked</span>`;
+      return `<div class="log-item">
+        <div class="log-dot" style="background:${cv.color}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="log-subj">${e.subject}</div>
+          <div class="log-meta">${e.from} &nbsp;${modeTag}&nbsp;<span class="badge" style="background:${cv.color}22;color:${cv.color}">${e.cat}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // brands
+  const bl = document.getElementById('brand-list');
+  const brands = Object.entries(S.brands);
+  document.getElementById('brand-count').textContent = brands.length+' stored';
+  if(!brands.length){ bl.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:18px 0">No decisions yet.</div>'; return; }
+  bl.innerHTML = brands.sort((a,b)=>(b[1].t||0)-(a[1].t||0)).map(([brand,d])=>{
+    const cls = `a-${d.action==='unsubscribe'?'unsub':d.action==='keep'?'keep':'recls'}`;
+    const lbl = d.action==='reclassify' ? `→ ${d.cat}` : d.action;
+    return `<div class="brand-row">
+      <div>
+        <div style="font-weight:600;font-size:14px">${brand.charAt(0).toUpperCase()+brand.slice(1)}</div>
+        <div style="font-size:11px;color:var(--muted)">${d.t ? new Date(d.t).toLocaleDateString('fr-FR'):''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="brand-action ${cls}">${lbl}</span>
+        <button class="forget-btn" onclick="forgetBrand('${brand}')">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearLog(){ S.log=[]; save(); render(); toast('Log cleared'); }
+function forgetBrand(b){ delete S.brands[b]; save(); render(); toast(`Forgot "${b}"`); }
+
+// ── simulations ───────────────────────────────────────────────────────────────
+const SAMPLES = [
+  {subject:'Votre facture EDF — mai 2026',       from:'factures@edf.fr',        cat:'bills'},
+  {subject:'Offre spéciale running Decathlon',    from:'promo@decathlon.com',    cat:'ads'},
+  {subject:'Départ Paris → Lyon demain',          from:'info@sncf-connect.com',  cat:'travel'},
+  {subject:'New job matches for you',             from:'jobs@linkedin.com',      cat:'jobs'},
+  {subject:'Dîner samedi, t\'es dispo ?',         from:'camille@gmail.com',      cat:'personal'},
+  {subject:'Vente Flash Nike — 48h only',         from:'noreply@nike.com',       cat:'ads'},
+  {subject:'Confirmation Airbnb Barcelone',       from:'confirm@airbnb.com',     cat:'travel'},
+  {subject:'Relevé mensuel Free Mobile',          from:'factures@free.fr',       cat:'bills'},
+  {subject:'Votre commande Amazon a été expédiée',from:'shipment@amazon.fr',     cat:'personal'},
+  {subject:'Offres emploi Data Science — semaine',from:'alerts@monster.fr',      cat:'jobs'},
+];
+
+function simClassify(){
+  const z = currentZone(S.labelled);
+  const n = Math.floor(Math.random()*3)+2;
+  const picked = [...SAMPLES].sort(()=>Math.random()-.5).slice(0,n);
+
+  picked.forEach(e=>{
+    const isAuto = z===3 || (z===2 && Math.random()>.35);
+    const mode = isAuto ? 'auto' : 'asked';
+
+    S.log.push({...e, mode, time: Date.now()-Math.random()*3600000});
+    S.folders[e.cat] = (S.folders[e.cat]||0)+1;
+
+    if(mode==='asked'){
+      S.labelled++;
+      S.asked++;
+      S.distribution[e.cat] = (S.distribution[e.cat]||0)+1;
+      // Simulate accuracy improving with more labels
+      if(S.labelled>=6) S.accuracy = Math.min(.97, .70 + (S.labelled/80)*.27);
+    } else {
+      S.auto++;
+    }
+  });
+
+  S.lastRun = Date.now();
+  save(); render();
+  toast(`✅ ${n} emails processed (Zone ${currentZone(S.labelled)})`);
+}
+
+const BRANDS = ['Decathlon','Nike','H&M','Fnac','BlaBlaCar','Prime Video','Leboncoin'];
+function simUnsub(){
+  const brand = BRANDS[Math.floor(Math.random()*BRANDS.length)].toLowerCase();
+  if(S.brands[brand]){ toast(`Already decided for ${brand}`); return; }
+  const ok = confirm(`Brand: ${brand}\n\nUnsubscribe?\n\nOK = Yes   Cancel = Keep`);
+  const action = ok ? 'unsubscribe' : 'keep';
+  S.brands[brand] = { action, t: Date.now() };
+  if(ok){ S.folders.ads = Math.max(0,(S.folders.ads||1)-1); }
+  save(); render();
+  toast(ok ? `🚫 Unsubscribed from ${brand}` : `✅ Kept ${brand} in Ads`);
+}
+
+// ── config ────────────────────────────────────────────────────────────────────
+function saveConfig(){
+  const cfg = {
+    host: document.getElementById('c-host').value,
+    port: document.getElementById('c-port').value,
+    user: document.getElementById('c-user').value,
+    days: document.getElementById('c-days').value,
+    live: document.getElementById('c-live').value,
+  };
+  LS.set('ema_config', cfg);
+  const env = `IMAP_HOST=${cfg.host}\nIMAP_PORT=${cfg.port}\nIMAP_USER=${cfg.user}\nIMAP_PASS=<your_password>\nANTHROPIC_API_KEY=<optional>\nLIVE_UNSUB=${cfg.live}`;
+  navigator.clipboard?.writeText(env).catch(()=>{});
+  toast('✅ Saved — .env copied to clipboard');
+}
+function loadConfig(){
+  const c = LS.get('ema_config'); if(!c) return;
+  if(c.host) document.getElementById('c-host').value=c.host;
+  if(c.port) document.getElementById('c-port').value=c.port;
+  if(c.user) document.getElementById('c-user').value=c.user;
+  if(c.days) document.getElementById('c-days').value=c.days;
+  if(c.live) document.getElementById('c-live').value=c.live;
+}
+
+// ── tabs state persistence ────────────────────────────────────────────────────
+const savedTab = LS.get('ema_tab');
+if(savedTab){
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    if(b.getAttribute('onclick')?.includes(savedTab)){
+      showTab(savedTab, b);
+    }
+  });
+}
+document.querySelectorAll('.nav-btn').forEach(b=>{
+  b.addEventListener('click',()=>LS.set('ema_tab', b.getAttribute('onclick')?.match(/'(s-\w+)'/)?.[1]||'s-dash'));
+});
+
+loadConfig();
+render();
+</script>
+</body>
+</html>
